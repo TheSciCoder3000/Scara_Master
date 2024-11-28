@@ -10,10 +10,8 @@
 #define BUT2 4
 #define BUT3 15
 
-// #define X2 34
-// #define X1 27
-// #define Y2 39
-// #define Y1 26
+#define ROTA 14
+#define ROTB 13
 
 #define X2 34
 #define X1 39
@@ -27,9 +25,14 @@ bool enabledJoystick = false;
 int upperMinimum = 4095 - 100;
 int lowerMinimum = 100;
 
+int rotaryCounter = 0;
+int aState;
+int aLastState;
+
 WireMaster comm;
 void checkLimits();
 void checkButtons();
+void checkRotary();
 void setup()
 {
   comm.begin();
@@ -45,6 +48,10 @@ void setup()
 
   pinMode(BUT1, INPUT);
   pinMode(BUT2, INPUT);
+
+  pinMode(ROTA, INPUT);
+  pinMode(ROTB, INPUT);
+  aLastState = digitalRead(ROTA);
   Serial.begin(9600); // start serial for output
 }
 
@@ -90,6 +97,7 @@ void loop()
     }
     else
     {
+      Serial.println("Transmit command: " + String(command));
       comm.transmit(command);
     }
   }
@@ -107,22 +115,22 @@ void loop()
     int joystick2_dirY = map(joystick2_Y, 0, 4095, -100, 100) / 100;
 
     if (joystick1_dirX == -1)
-      comm.transmit("STEP1CC1");
+      comm.transmit("STEP1CC10");
     if (joystick1_dirX == 1)
-      comm.transmit("STEP1CL1");
+      comm.transmit("STEP1CL10");
     if (joystick1_dirY == -1)
-      comm.transmit("STEP2CC1");
+      comm.transmit("STEP2CC10");
     if (joystick1_dirY == 1)
-      comm.transmit("STEP2CL1");
+      comm.transmit("STEP2CL10");
 
     if (joystick2_dirX == -1)
-      comm.transmit("STEP3CC1"); // ARM
+      comm.transmit("STEP3CC10"); // ARM
     if (joystick2_dirX == 1)
-      comm.transmit("STEP3CL1");
+      comm.transmit("STEP3CL10");
     if (joystick2_dirY == -1)
-      comm.transmit("STEP4CC1");
+      comm.transmit("STEP4CC10");
     if (joystick2_dirY == 1)
-      comm.transmit("STEP4CL1");
+      comm.transmit("STEP4CL10");
 
     // Serial.println("J1 X: " + String(joystick1_dirX) + "J1 Y: " + String(joystick1_dirY));
     // Serial.println("J1X: " + String(joystick1_X) + " | J1Y: " + String(joystick1_Y) + " | J2X: " + String(joystick2_X) + " | J2Y: " + String(joystick2_Y));
@@ -130,10 +138,33 @@ void loop()
 
   // checkLimits();
   // checkButtons();
+  checkRotary();
 }
 
-void calibrate()
+void checkRotary()
 {
+  aState = digitalRead(ROTA); // Reads the "current" state of the outputA
+  // If the previous and the current state of the outputA are different, that means a Pulse has occured
+  if (aState != aLastState)
+  {
+    // If the outputB state is different to the outputA state, that means the encoder is rotating clockwise
+    if (digitalRead(ROTB) != aState)
+    {
+      rotaryCounter++;
+    }
+    else
+    {
+      rotaryCounter--;
+    }
+
+    if (rotaryCounter > 180)
+      rotaryCounter = 180;
+    else if (rotaryCounter < 0)
+      rotaryCounter = 0;
+
+    comm.transmit("SERV" + String(rotaryCounter));
+  }
+  aLastState = aState; // Updates the previous state of the outputA with the current state
 }
 
 void checkLimits()
