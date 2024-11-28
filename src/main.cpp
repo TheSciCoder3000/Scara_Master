@@ -19,6 +19,8 @@
 #define Y1 26
 
 #define SLAVE_ADD 69
+
+// ================= CONSTANTS =================
 bool displayLimits = false;
 bool enabledJoystick = false;
 
@@ -29,10 +31,14 @@ int rotaryCounter = 0;
 int aState;
 int aLastState;
 
+int minmax_1[2] = {100, 1000};
+
 WireMaster comm;
 void checkLimits();
 void checkButtons();
 void checkRotary();
+int mapValue(int value, int min, int max, int rangeStart, int rangeEnd);
+
 void setup()
 {
   comm.begin();
@@ -109,36 +115,59 @@ void loop()
     int joystick2_X = analogRead(Y1);
     int joystick2_Y = analogRead(Y2);
 
-    int joystick1_dirX = map(joystick1_X, 0, 4095, -100, 100) / 100;
-    int joystick1_dirY = map(joystick1_Y, 0, 4095, -100, 100) / 100;
-    int joystick2_dirX = map(joystick2_X, 0, 4095, -100, 100) / 100;
-    int joystick2_dirY = map(joystick2_Y, 0, 4095, -100, 100) / 100;
+    int joystick1_dirX = map(joystick1_X, 0, 4095, -5000, 5000) / 450;
+    // Serial.println("STED1" + String(joystick1_dirX < 0 ? "CC" : "CL") + String(abs(joystick1_dirX)));
+    joystick1_dirX = mapValue(joystick1_dirX, 1, 11, 1000, 100);
 
-    if (joystick1_dirX == -1)
-      comm.transmit("STEP1CC10");
-    if (joystick1_dirX == 1)
-      comm.transmit("STEP1CL10");
-    if (joystick1_dirY == -1)
-      comm.transmit("STEP2CC10");
-    if (joystick1_dirY == 1)
-      comm.transmit("STEP2CL10");
+    int joystick1_dirY = map(joystick1_Y, 0, 4095, -1000, 1000) / 110;
+    joystick1_dirY = mapValue(joystick1_dirY, 1, 9, 400, 50);
 
-    if (joystick2_dirX == -1)
-      comm.transmit("STEP3CC10"); // ARM
-    if (joystick2_dirX == 1)
-      comm.transmit("STEP3CL10");
-    if (joystick2_dirY == -1)
-      comm.transmit("STEP4CC10");
-    if (joystick2_dirY == 1)
-      comm.transmit("STEP4CL10");
+    int joystick2_dirX = map(joystick2_X, 0, 4095, -5000, 5000) / 500;
+    joystick2_dirX = mapValue(joystick2_dirX, 1, 10, 1000, 100);
 
-    // Serial.println("J1 X: " + String(joystick1_dirX) + "J1 Y: " + String(joystick1_dirY));
+    int joystick2_dirY = map(joystick2_Y, 0, 4095, -1000, 1000) / 110;
+    joystick2_dirY = mapValue(joystick2_dirY, 1, 9, 1000, 120);
+
+    comm.transmit("STED1" + String(joystick1_dirX < 0 ? "CC" : "CL") + String(abs(joystick1_dirX)));
+    comm.transmit("STED2" + String(joystick1_dirY < 0 ? "CC" : "CL") + String(abs(joystick1_dirY)));
+    comm.transmit("STED3" + String(joystick2_dirX < 0 ? "CC" : "CL") + String(abs(joystick2_dirX)));
+    comm.transmit("STED4" + String(joystick2_dirY < 0 ? "CC" : "CL") + String(abs(joystick2_dirY)));
+    // if (joystick1_dirX == -1)
+    //   comm.transmit("STEP1CC10");
+    // if (joystick1_dirX == 1)
+    //   comm.transmit("STEP1CL10");
+    // if (joystick1_dirY == -1)
+    //   comm.transmit("STEP2CC10");
+    // if (joystick1_dirY == 1)
+    //   comm.transmit("STEP2CL10");
+
+    // if (joystick2_dirX == -1)
+    //   comm.transmit("STEP3CC10"); // ARM
+    // if (joystick2_dirX == 1)
+    //   comm.transmit("STEP3CL10");
+    // if (joystick2_dirY == -1)
+    //   comm.transmit("STEP4CC10");
+    // if (joystick2_dirY == 1)
+    //   comm.transmit("STEP4CL10");
+
+    // Serial.println("J1 X: " + String(joystick1_dirX));
     // Serial.println("J1X: " + String(joystick1_X) + " | J1Y: " + String(joystick1_Y) + " | J2X: " + String(joystick2_X) + " | J2Y: " + String(joystick2_Y));
   }
 
   // checkLimits();
   // checkButtons();
   checkRotary();
+}
+
+int mapValue(int value, int min, int max, int rangeStart, int rangeEnd)
+{
+  if (value == 0)
+    return 0;
+  int multiplier = value > 0 ? 1 : -1;
+  int newvalue = abs(value);
+
+  // Linear interpolation formula with integer output
+  return map(newvalue, min, max, rangeStart, rangeEnd) * multiplier;
 }
 
 void checkRotary()
