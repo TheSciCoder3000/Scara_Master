@@ -38,6 +38,7 @@ void checkLimits();
 void checkButtons();
 void checkRotary();
 int mapValue(int value, int min, int max, int rangeStart, int rangeEnd);
+int mapAnalog(int analogValue, int range[2]);
 
 void setup()
 {
@@ -115,18 +116,17 @@ void loop()
     int joystick2_X = analogRead(Y1);
     int joystick2_Y = analogRead(Y2);
 
-    int joystick1_dirX = map(joystick1_X, 0, 4095, -5000, 5000) / 450;
-    // Serial.println("STED1" + String(joystick1_dirX < 0 ? "CC" : "CL") + String(abs(joystick1_dirX)));
-    joystick1_dirX = mapValue(joystick1_dirX, 1, 11, 1000, 100);
+    int joystick1_rangeX[2] = {1000, 60};
+    int joystick1_dirX = mapAnalog(joystick1_X, joystick1_rangeX);
 
-    int joystick1_dirY = map(joystick1_Y, 0, 4095, -1000, 1000) / 110;
-    joystick1_dirY = mapValue(joystick1_dirY, 1, 9, 400, 50);
+    int joystick1_rangeY[2] = {400, 40};
+    int joystick1_dirY = mapAnalog(joystick1_Y, joystick1_rangeY);
 
-    int joystick2_dirX = map(joystick2_X, 0, 4095, -5000, 5000) / 500;
-    joystick2_dirX = mapValue(joystick2_dirX, 1, 10, 1000, 100);
+    int joystick2_rangeX[2] = {1000, 70};
+    int joystick2_dirX = mapAnalog(joystick2_X, joystick2_rangeX);
 
-    int joystick2_dirY = map(joystick2_Y, 0, 4095, -1000, 1000) / 110;
-    joystick2_dirY = mapValue(joystick2_dirY, 1, 9, 1000, 120);
+    int joystick2_rangeY[2] = {1000, 150};
+    int joystick2_dirY = mapAnalog(joystick2_Y, joystick2_rangeY);
 
     comm.transmit("STED1" + String(joystick1_dirX < 0 ? "CC" : "CL") + String(abs(joystick1_dirX)));
     comm.transmit("STED2" + String(joystick1_dirY < 0 ? "CC" : "CL") + String(abs(joystick1_dirY)));
@@ -157,6 +157,19 @@ void loop()
   // checkLimits();
   // checkButtons();
   checkRotary();
+}
+
+int mapAnalog(int value, int range[2])
+{
+  int normalized = map(value, 0, 4095, -128, 128);
+  if (normalized < 20 && normalized > -20)
+    return 0;
+
+  int abs_value = abs(normalized);
+  int multipler = normalized / abs_value;
+
+  int converted_delay = map(abs_value, 20, 128, range[0], range[1]);
+  return converted_delay * multipler;
 }
 
 int mapValue(int value, int min, int max, int rangeStart, int rangeEnd)
