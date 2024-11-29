@@ -116,39 +116,22 @@ void loop()
     int joystick2_X = analogRead(Y1);
     int joystick2_Y = analogRead(Y2);
 
-    int joystick1_rangeX[2] = {1000, 60};
+    int joystick1_rangeX[2] = {3000, 300};
     int joystick1_dirX = mapAnalog(joystick1_X, joystick1_rangeX);
 
-    int joystick1_rangeY[2] = {400, 40};
+    int joystick1_rangeY[2] = {400, 60};
     int joystick1_dirY = mapAnalog(joystick1_Y, joystick1_rangeY);
 
-    int joystick2_rangeX[2] = {1000, 70};
+    int joystick2_rangeX[2] = {1500, 150};
     int joystick2_dirX = mapAnalog(joystick2_X, joystick2_rangeX);
 
-    int joystick2_rangeY[2] = {1000, 150};
+    int joystick2_rangeY[2] = {2000, 300};
     int joystick2_dirY = mapAnalog(joystick2_Y, joystick2_rangeY);
 
     comm.transmit("STED1" + String(joystick1_dirX < 0 ? "CC" : "CL") + String(abs(joystick1_dirX)));
     comm.transmit("STED2" + String(joystick1_dirY < 0 ? "CC" : "CL") + String(abs(joystick1_dirY)));
     comm.transmit("STED3" + String(joystick2_dirX < 0 ? "CC" : "CL") + String(abs(joystick2_dirX)));
     comm.transmit("STED4" + String(joystick2_dirY < 0 ? "CC" : "CL") + String(abs(joystick2_dirY)));
-    // if (joystick1_dirX == -1)
-    //   comm.transmit("STEP1CC10");
-    // if (joystick1_dirX == 1)
-    //   comm.transmit("STEP1CL10");
-    // if (joystick1_dirY == -1)
-    //   comm.transmit("STEP2CC10");
-    // if (joystick1_dirY == 1)
-    //   comm.transmit("STEP2CL10");
-
-    // if (joystick2_dirX == -1)
-    //   comm.transmit("STEP3CC10"); // ARM
-    // if (joystick2_dirX == 1)
-    //   comm.transmit("STEP3CL10");
-    // if (joystick2_dirY == -1)
-    //   comm.transmit("STEP4CC10");
-    // if (joystick2_dirY == 1)
-    //   comm.transmit("STEP4CL10");
 
     // Serial.println("J1 X: " + String(joystick1_dirX));
     // Serial.println("J1X: " + String(joystick1_X) + " | J1Y: " + String(joystick1_Y) + " | J2X: " + String(joystick2_X) + " | J2Y: " + String(joystick2_Y));
@@ -192,11 +175,11 @@ void checkRotary()
     // If the outputB state is different to the outputA state, that means the encoder is rotating clockwise
     if (digitalRead(ROTB) != aState)
     {
-      rotaryCounter++;
+      rotaryCounter += 3;
     }
     else
     {
-      rotaryCounter--;
+      rotaryCounter -= 3;
     }
 
     if (rotaryCounter > 180)
