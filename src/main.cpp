@@ -20,6 +20,11 @@
 
 #define SLAVE_ADD 69
 
+bool is_limit_1 = false;
+bool is_limit_2 = false;
+bool is_limit_3 = false;
+bool is_limit_4 = false;
+
 // ================= CONSTANTS =================
 bool displayLimits = false;
 bool enabledJoystick = false;
@@ -128,16 +133,44 @@ void loop()
     int joystick2_rangeY[2] = {2000, 300};
     int joystick2_dirY = mapAnalog(joystick2_Y, joystick2_rangeY);
 
-    comm.transmit("STED1" + String(joystick1_dirX < 0 ? "CC" : "CL") + String(abs(joystick1_dirX)));
-    comm.transmit("STED2" + String(joystick1_dirY < 0 ? "CC" : "CL") + String(abs(joystick1_dirY)));
-    comm.transmit("STED3" + String(joystick2_dirX < 0 ? "CC" : "CL") + String(abs(joystick2_dirX)));
-    comm.transmit("STED4" + String(joystick2_dirY < 0 ? "CC" : "CL") + String(abs(joystick2_dirY)));
+    if (joystick1_dirX > 0)
+    {
+      comm.transmit("STED1CL" + String(is_limit_1 ? 0 : (joystick1_dirX)));
+    }
+    else
+    {
+      comm.transmit("STED1CC" + String(abs(joystick1_dirX)));
+    }
 
-    // Serial.println("J1 X: " + String(joystick1_dirX));
-    // Serial.println("J1X: " + String(joystick1_X) + " | J1Y: " + String(joystick1_Y) + " | J2X: " + String(joystick2_X) + " | J2Y: " + String(joystick2_Y));
+    if (joystick1_dirY > 0)
+    {
+      comm.transmit("STED2CL" + String(is_limit_2 ? 0 : (joystick1_dirY)));
+    }
+    else
+    {
+      comm.transmit("STED2CC" + String(abs(joystick1_dirY)));
+    }
+
+    if (joystick2_dirX > 0)
+    {
+      comm.transmit("STED3CL" + String(is_limit_3 ? 0 : (joystick2_dirX)));
+    }
+    else
+    {
+      comm.transmit("STED3CC" + String(abs(joystick2_dirX)));
+    }
+
+    if (joystick2_dirY > 0)
+    {
+      comm.transmit("STED4CC" + String(is_limit_4 ? 0 : (joystick2_dirY)));
+    }
+    else
+    {
+      comm.transmit("STED4CL" + String(abs(joystick2_dirY)));
+    }
   }
 
-  // checkLimits();
+  checkLimits();
   // checkButtons();
   checkRotary();
 }
@@ -153,17 +186,6 @@ int mapAnalog(int value, int range[2])
 
   int converted_delay = map(abs_value, 20, 128, range[0], range[1]);
   return converted_delay * multipler;
-}
-
-int mapValue(int value, int min, int max, int rangeStart, int rangeEnd)
-{
-  if (value == 0)
-    return 0;
-  int multiplier = value > 0 ? 1 : -1;
-  int newvalue = abs(value);
-
-  // Linear interpolation formula with integer output
-  return map(newvalue, min, max, rangeStart, rangeEnd) * multiplier;
 }
 
 void checkRotary()
@@ -194,29 +216,10 @@ void checkRotary()
 
 void checkLimits()
 {
-  if (digitalRead(LM1) == LOW)
-  {
-    Serial.println("stopping 1: " + String(digitalRead(LM1)));
-    // comm.transmit("STOP1");
-  }
-
-  // if (digitalRead(LM2) == HIGH)
-  // {
-  //   Serial.println("stopping 2 " + String(digitalRead(LM2)));
-  //   // comm.transmit("STOP2");
-  // }
-
-  // if (digitalRead(LM3) == HIGH)
-  // {
-  //   Serial.println("stopping 3");
-  //   // comm.transmit("STOP3");
-  // }
-
-  // if (digitalRead(LM4) == HIGH)
-  // {
-  //   Serial.println("stopping 4");
-  //   // comm.transmit("STOP4");
-  // }
+  is_limit_1 = digitalRead(LM1) == LOW;
+  is_limit_2 = digitalRead(LM2) == LOW;
+  is_limit_3 = digitalRead(LM3) == LOW;
+  is_limit_4 = digitalRead(LM4) == LOW;
 }
 
 void checkButtons()
