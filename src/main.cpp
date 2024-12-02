@@ -42,6 +42,7 @@ WireMaster comm;
 void checkLimits();
 void checkButtons();
 void checkRotary();
+int calc_joystick(int x, int y, int center);
 int mapValue(int value, int min, int max, int rangeStart, int rangeEnd);
 int mapAnalog(int analogValue, int range[2]);
 
@@ -104,8 +105,8 @@ void loop()
     }
     else if (command == "toggle joystick")
     {
-      Serial.println("Joystick Enabled!");
       enabledJoystick = !enabledJoystick;
+      Serial.println("Joystick " + String(enabledJoystick ? "Enabled" : "Disabled"));
     }
     else
     {
@@ -122,10 +123,16 @@ void loop()
     int joystick2_Y = analogRead(Y2);
 
     int joystick1_rangeX[2] = {3000, 300};
+    // int joystick1_rangeX[2] = {0, 10};
     int joystick1_dirX = mapAnalog(joystick1_X, joystick1_rangeX);
 
+    // int joystick1_rangeY[2] = {0, 10};
     int joystick1_rangeY[2] = {400, 60};
     int joystick1_dirY = mapAnalog(joystick1_Y, joystick1_rangeY);
+
+    // int joystick1_calc = calc_joystick(joystick1_X, joystick1_Y, 1800);
+
+    // Serial.println("Joystick Calc: " + String(joystick1_calc));
 
     int joystick2_rangeX[2] = {1500, 150};
     int joystick2_dirX = mapAnalog(joystick2_X, joystick2_rangeX);
@@ -133,40 +140,56 @@ void loop()
     int joystick2_rangeY[2] = {2000, 300};
     int joystick2_dirY = mapAnalog(joystick2_Y, joystick2_rangeY);
 
+    String transmission = "";
+
     if (joystick1_dirX > 0)
     {
-      comm.transmit("STED1CL" + String(is_limit_1 ? 0 : (joystick1_dirX)));
+      transmission += "PARS1CL" + String(is_limit_1 ? 0 : (joystick1_dirX)) + ";";
+      // comm.transmit("STED1CL" + String(is_limit_1 ? 0 : (joystick1_dirX)));
     }
     else
     {
-      comm.transmit("STED1CC" + String(abs(joystick1_dirX)));
+      transmission += "PARS1CC" + String(abs(joystick1_dirX)) + ";";
+      // comm.transmit("STED1CC" + String(abs(joystick1_dirX)));
     }
 
     if (joystick1_dirY > 0)
     {
-      comm.transmit("STED2CL" + String(is_limit_2 ? 0 : (joystick1_dirY)));
+      transmission += "PARS2CL" + String(is_limit_2 ? 0 : (joystick1_dirY)) + ";";
+      // comm.transmit("STED2CL" + String(is_limit_2 ? 0 : (joystick1_dirY)));
     }
     else
     {
-      comm.transmit("STED2CC" + String(abs(joystick1_dirY)));
+      transmission += "PARS2CC" + String(abs(joystick1_dirY)) + ";";
+      // comm.transmit("STED2CC" + String(abs(joystick1_dirY)));
     }
 
     if (joystick2_dirX > 0)
     {
-      comm.transmit("STED3CL" + String(is_limit_3 ? 0 : (joystick2_dirX)));
+      transmission += "PARS3CL" + String(is_limit_3 ? 0 : (joystick2_dirX)) + ";";
+      // comm.transmit("STED3CL" + String(is_limit_3 ? 0 : (joystick2_dirX)));
     }
     else
     {
-      comm.transmit("STED3CC" + String(abs(joystick2_dirX)));
+      transmission += "PARS3CC" + String(abs(joystick2_dirX)) + ";";
+      // comm.transmit("STED3CC" + String(abs(joystick2_dirX)));
     }
 
     if (joystick2_dirY > 0)
     {
-      comm.transmit("STED4CC" + String(is_limit_4 ? 0 : (joystick2_dirY)));
+      transmission += "PARS4CC" + String(is_limit_4 ? 0 : (joystick2_dirY)) + ";";
+      // comm.transmit("STED4CC" + String(is_limit_4 ? 0 : (joystick2_dirY)));
     }
     else
     {
-      comm.transmit("STED4CL" + String(abs(joystick2_dirY)));
+      transmission += "PARS4CL" + String(abs(joystick2_dirY)) + ";";
+      // comm.transmit("STED4CL" + String(abs(joystick2_dirY)));
+    }
+
+    if (transmission != "")
+    {
+      comm.transmit(transmission);
+      Serial.println(transmission);
     }
   }
 
@@ -178,6 +201,8 @@ void loop()
 int mapAnalog(int value, int range[2])
 {
   int normalized = map(value, 0, 4095, -128, 128);
+
+  // Serial.println("Normalized: " + String(normalized));
   if (normalized < 20 && normalized > -20)
     return 0;
 
@@ -238,6 +263,23 @@ void checkButtons()
   {
     Serial.println("button 3");
   }
+}
+
+int calc_joystick(int X, int Y, int center)
+{
+  int deltaX = X - center;
+  int deltaY = Y - center;
+
+  double rad = atan2(deltaY, deltaX); // In radians
+
+  // For conversion to degrees you use the following formula:
+  double deg = rad * 57.295779513082320876798154814105; // we assume that a radian is 57.29 and a bit degrees.
+
+  int dist = sqrt(deltaX * deltaX + deltaY * deltaY);
+
+  Serial.println("Delta X: " + String(deltaX) + "\t | \t Delta Y: " + String(deltaY) + "\t | \t Dist: " + String(dist));
+
+  return dist;
 }
 
 // SERV
