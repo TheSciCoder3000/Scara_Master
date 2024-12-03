@@ -31,6 +31,7 @@ bool is_limit_4 = false;
 // ================= CONSTANTS =================
 bool displayLimits = false;
 bool enabledJoystick = false;
+bool christmasEnabled = false;
 
 int upperMinimum = 4095 - 100;
 int lowerMinimum = 100;
@@ -44,10 +45,13 @@ int minmax_1[2] = {100, 1000};
 int prevTime = 0;
 bool LED_ON = false;
 
+int christmasPrevTimer = 0;
+
 WireMaster comm;
 void checkLimits();
 void checkButtons();
 void checkRotary();
+void christmasSong();
 int calc_joystick(int x, int y, int center);
 int mapValue(int value, int min, int max, int rangeStart, int rangeEnd);
 int mapAnalog(int analogValue, int range[2]);
@@ -84,6 +88,7 @@ void loop()
 
   if (Serial.available())
   {
+
     String command = Serial.readStringUntil('\n');
 
     if (command == "who u?")
@@ -205,6 +210,9 @@ void loop()
   checkLimits();
   checkButtons();
   checkRotary();
+
+  if (christmasEnabled)
+    christmasSong();
 }
 
 int mapAnalog(int value, int range[2])
@@ -273,7 +281,15 @@ void checkButtons()
   }
   else if (button2.isPressed())
   {
-    Serial.println("button 2");
+    christmasEnabled = !christmasEnabled;
+
+    Serial.println("BUTTON CMD: Christmas " + String(christmasEnabled == true ? "Enabled!" : "Disabled!"));
+
+    if (christmasEnabled)
+    {
+      String zero = "PARS1CC0;PARS2CC0;PARS3CL0;PARS4CL0;";
+      comm.transmit(zero);
+    }
   }
   else if (button3.isPressed())
   {
@@ -303,6 +319,26 @@ int calc_joystick(int X, int Y, int center)
   Serial.println("Delta X: " + String(deltaX) + "\t | \t Delta Y: " + String(deltaY) + "\t | \t Dist: " + String(dist));
 
   return dist;
+}
+
+void christmasSong()
+{
+
+  String beat = "PARS1CC0;PARS2CC0;PARS3CC0;PARS4CL200;";
+  String reset = "PARS1CL0;PARS2CC0;PARS3CL0;PARS4CC200;";
+  String zero = "PARS1CC0;PARS2CC0;PARS3CL0;PARS4CL0;";
+
+  int music_delay = 500;
+
+  if ((millis() - christmasPrevTimer >= 500) && (millis() - christmasPrevTimer <= 1000))
+  {
+    comm.transmit(beat);
+  }
+  if ((millis() - christmasPrevTimer >= 1000))
+  {
+    comm.transmit(reset);
+    christmasPrevTimer = millis();
+  }
 }
 
 // SERV
