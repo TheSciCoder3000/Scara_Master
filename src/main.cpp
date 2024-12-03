@@ -1,10 +1,13 @@
 #include <Wire_Master.h>
 #include "Arduino.h"
+#include "ezButton.h"
 
 #define LM1 5
 #define LM2 17
 #define LM3 33
 #define LM4 32
+
+#define LED 2
 
 #define BUT1 16
 #define BUT2 4
@@ -38,6 +41,9 @@ int aLastState;
 
 int minmax_1[2] = {100, 1000};
 
+int prevTime = 0;
+bool LED_ON = false;
+
 WireMaster comm;
 void checkLimits();
 void checkButtons();
@@ -45,6 +51,10 @@ void checkRotary();
 int calc_joystick(int x, int y, int center);
 int mapValue(int value, int min, int max, int rangeStart, int rangeEnd);
 int mapAnalog(int analogValue, int range[2]);
+
+ezButton button1(BUT1, EXTERNAL_PULLDOWN);
+ezButton button2(BUT2, EXTERNAL_PULLDOWN);
+ezButton button3(BUT3, EXTERNAL_PULLDOWN);
 
 void setup()
 {
@@ -59,8 +69,7 @@ void setup()
   pinMode(Y1, INPUT);
   pinMode(Y2, INPUT);
 
-  pinMode(BUT1, INPUT);
-  pinMode(BUT2, INPUT);
+  pinMode(LED, OUTPUT);
 
   pinMode(ROTA, INPUT);
   pinMode(ROTB, INPUT);
@@ -189,12 +198,12 @@ void loop()
     if (transmission != "")
     {
       comm.transmit(transmission);
-      Serial.println(transmission);
+      // Serial.println(transmission);
     }
   }
 
   checkLimits();
-  // checkButtons();
+  checkButtons();
   checkRotary();
 }
 
@@ -249,19 +258,33 @@ void checkLimits()
 
 void checkButtons()
 {
-  if (digitalRead(BUT1) == HIGH)
-  {
-    Serial.println("button 1");
-  }
+  button1.loop();
+  button2.loop();
+  button3.loop();
 
-  if (digitalRead(BUT2) == HIGH)
+  if (button1.isPressed())
+  {
+    enabledJoystick = !enabledJoystick;
+
+    Serial.println("BUTTON CMD: Joystick " + String(enabledJoystick == true ? "Enabled!" : "Disabled!"));
+
+    if (!enabledJoystick)
+      digitalWrite(LED, LOW);
+  }
+  else if (button2.isPressed())
   {
     Serial.println("button 2");
   }
-
-  if (digitalRead(BUT3) == HIGH)
+  else if (button3.isPressed())
   {
     Serial.println("button 3");
+  }
+
+  if (millis() - prevTime > 500 && enabledJoystick)
+  {
+    digitalWrite(LED, LED_ON);
+    LED_ON = !LED_ON;
+    prevTime = millis();
   }
 }
 
